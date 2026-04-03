@@ -2,7 +2,6 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rejestr badań – Spółka AS</title>
 
 <script type="module">
@@ -26,11 +25,12 @@ const db = getFirestore(app);
 let dane = [];
 let zaznaczony = null;
 
-// auth
+// LOGIN / REGISTER / LOGOUT
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
 window.register = () => createUserWithEmailAndPassword(auth, email.value, haslo.value);
 window.logout = () => signOut(auth);
 
+// AUTH STATE
 onAuthStateChanged(auth, user => {
     if(user){
         loginDiv.style.display = "none";
@@ -42,7 +42,7 @@ onAuthStateChanged(auth, user => {
     }
 });
 
-// sync
+// LOAD + SYNC
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -53,7 +53,7 @@ function load(){
     });
 }
 
-// add
+// ADD
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         osoba:"",
@@ -65,39 +65,39 @@ window.dodaj = async () => {
     });
 }
 
-// update
+// UPDATE
 window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// select
+// SELECT ROW
 window.selectRow = (id) => {
-    zaznaczony = zaznaczony === id ? null : id;
+    zaznaczony = (zaznaczony === id) ? null : id;
     render();
 }
 
-// delete
+// DELETE SELECTED
 window.usunZaznaczony = async () => {
     if(!zaznaczony){
-        alert("Wybierz wiersz");
+        alert("Najpierw zaznacz wiersz!");
         return;
     }
     await deleteDoc(doc(db, "rejestr", zaznaczony));
     zaznaczony = null;
 }
 
-// render
+// RENDER
 function render(){
     body.innerHTML = "";
 
     dane.forEach((row, i) => {
         body.innerHTML += `
-        <tr class="${zaznaczony===row.id ? 'active' : ''}">
+        <tr style="${zaznaczony===row.id ? 'background:#cce5ff' : ''}">
             
             <td>
-                <input type="checkbox"
-                ${zaznaczony===row.id ? "checked":""}
-                onclick="event.stopPropagation(); selectRow('${row.id}')">
+                <input type="checkbox" 
+                ${zaznaczony===row.id ? "checked" : ""} 
+                onclick="selectRow('${row.id}')">
             </td>
 
             <td>${i+1}</td>
@@ -130,51 +130,11 @@ function render(){
 </script>
 
 <style>
-body {
-    font-family: Arial;
-    background:#f0f0f0;
-    padding:10px;
-}
-
-/* przyciski */
-button {
-    padding:12px;
-    margin:5px 5px 10px 0;
-    font-size:16px;
-}
-
-/* tabela scroll */
-.table-container {
-    overflow-x: auto;
-}
-
-/* tabela */
-table {
-    min-width: 900px;
-    border-collapse: collapse;
-    background:white;
-}
-
-th, td {
-    border:1px solid #ccc;
-    padding:8px;
-    text-align:center;
-}
-
-th {
-    background:#ffd400;
-}
-
-input, select {
-    width:100%;
-    padding:6px;
-    font-size:14px;
-}
-
-/* zaznaczenie */
-.active {
-    background:#cce5ff;
-}
+body { font-family: Arial; background:#f0f0f0; padding:20px; }
+table { width:100%; border-collapse: collapse; background:white; }
+th, td { border:1px solid #ccc; padding:5px; font-size:12px; text-align:center; }
+th { background:#ffd400; }
+input, select { width:100%; border:none; padding:4px; }
 </style>
 
 </head>
@@ -190,13 +150,12 @@ input, select {
 </div>
 
 <div id="appDiv" style="display:none">
-<h2>Rejestr badań</h2>
+<h1>Rejestr badań – Spółka AS</h1>
 
 <button onclick="dodaj()">➕ Dodaj</button>
-<button onclick="usunZaznaczony()">🗑️ Usuń</button>
+<button onclick="usunZaznaczony()">🗑️ Usuń zaznaczony</button>
 <button onclick="logout()">Wyloguj</button>
 
-<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -205,8 +164,8 @@ input, select {
 <th>Osoba</th>
 <th>Firma</th>
 <th>Materiał</th>
-<th>Start</th>
-<th>Koniec</th>
+<th>Data start</th>
+<th>Data koniec</th>
 <th>VT</th>
 <th>PT</th>
 <th>MT</th>
@@ -217,8 +176,6 @@ input, select {
 <tbody id="body"></tbody>
 </table>
 </div>
-</div>
 
 </body>
 </html>
-
