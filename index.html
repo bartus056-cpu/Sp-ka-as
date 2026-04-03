@@ -4,46 +4,33 @@
 <meta charset="UTF-8">
 <title>Rejestr badań – Spółka AS</title>
 
-<!-- Firebase (nowa wersja modularna) -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// 🔥 TWOJA KONFIGURACJA (już wklejona)
 const firebaseConfig = {
   apiKey: "AIzaSyAQ3U0w1Ubp_sm_Vjx6jYCZ5UtGyRIsxug",
   authDomain: "spolka-as.firebaseapp.com",
   projectId: "spolka-as",
   storageBucket: "spolka-as.firebasestorage.app",
   messagingSenderId: "339018357387",
-  appId: "1:339018357387:web:2b1b1812cef5086f43528e",
-  measurementId: "G-N4R8B303TK"
+  appId: "1:339018357387:web:2b1b1812cef5086f43528e"
 };
 
-// init
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 let dane = [];
+let zaznaczony = null;
 
-// 🔐 LOGIN
-window.login = () => {
-    signInWithEmailAndPassword(auth, email.value, haslo.value);
-}
+// LOGIN
+window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
+window.register = () => createUserWithEmailAndPassword(auth, email.value, haslo.value);
+window.logout = () => signOut(auth);
 
-// 🆕 REJESTRACJA
-window.register = () => {
-    createUserWithEmailAndPassword(auth, email.value, haslo.value);
-}
-
-// 🚪 WYLOGUJ
-window.logout = () => {
-    signOut(auth);
-}
-
-// 👤 SPRAWDZ USERA
+// USER
 onAuthStateChanged(auth, user => {
     if(user){
         loginDiv.style.display = "none";
@@ -55,7 +42,7 @@ onAuthStateChanged(auth, user => {
     }
 });
 
-// 🔄 SYNC
+// SYNC
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -66,47 +53,70 @@ function load(){
     });
 }
 
-// ➕ DODAJ
+// DODAJ
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         osoba:"",
         firma:"",
         material:"",
+        start:"",
+        koniec:"",
         vt:false, pt:false, mt:false, ut:false, rt:false
     });
 }
 
-// ✏️ UPDATE
+// UPDATE
 window.update = async (id, key, value) => {
-    await updateDoc(doc(db, "rejestr", id), {
-        [key]: value
-    });
+    await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// ❌ DELETE
-window.usun = async (id) => {
-    await deleteDoc(doc(db, "rejestr", id));
+// ZAZNACZ WIERSZ
+window.selectRow = (id) => {
+    zaznaczony = id;
+    render();
 }
 
-// 🎨 RENDER
+// USUŃ ZAZNACZONY
+window.usunZaznaczony = async () => {
+    if(!zaznaczony){
+        alert("Najpierw wybierz wiersz!");
+        return;
+    }
+    await deleteDoc(doc(db, "rejestr", zaznaczony));
+    zaznaczony = null;
+}
+
+// RENDER
 function render(){
     body.innerHTML = "";
 
     dane.forEach((row, i) => {
         body.innerHTML += `
-        <tr>
+        <tr onclick="selectRow('${row.id}')" style="${zaznaczony===row.id ? 'background:#cce5ff' : ''}">
             <td>${i+1}</td>
-            <td><input value="${row.osoba||""}" onchange="update('${row.id}','osoba',this.value)"></td>
+
+            <td>
+                <select onchange="update('${row.id}','osoba',this.value)">
+                    <option></option>
+                    <option ${row.osoba=="Michał"?"selected":""}>Michał</option>
+                    <option ${row.osoba=="Grzegorz"?"selected":""}>Grzegorz</option>
+                    <option ${row.osoba=="Kevin"?"selected":""}>Kevin</option>
+                    <option ${row.osoba=="Marcel"?"selected":""}>Marcel</option>
+                    <option ${row.osoba=="Bartek"?"selected":""}>Bartek</option>
+                </select>
+            </td>
+
             <td><input value="${row.firma||""}" onchange="update('${row.id}','firma',this.value)"></td>
             <td><input value="${row.material||""}" onchange="update('${row.id}','material',this.value)"></td>
+
+            <td><input type="date" value="${row.start||""}" onchange="update('${row.id}','start',this.value)"></td>
+            <td><input type="date" value="${row.koniec||""}" onchange="update('${row.id}','koniec',this.value)"></td>
 
             <td><input type="checkbox" ${row.vt?"checked":""} onchange="update('${row.id}','vt',this.checked)"></td>
             <td><input type="checkbox" ${row.pt?"checked":""} onchange="update('${row.id}','pt',this.checked)"></td>
             <td><input type="checkbox" ${row.mt?"checked":""} onchange="update('${row.id}','mt',this.checked)"></td>
             <td><input type="checkbox" ${row.ut?"checked":""} onchange="update('${row.id}','ut',this.checked)"></td>
             <td><input type="checkbox" ${row.rt?"checked":""} onchange="update('${row.id}','rt',this.checked)"></td>
-
-            <td><button onclick="usun('${row.id}')">X</button></td>
         </tr>`;
     });
 }
@@ -117,7 +127,7 @@ body { font-family: Arial; background:#f0f0f0; padding:20px; }
 table { width:100%; border-collapse: collapse; background:white; }
 th, td { border:1px solid #ccc; padding:5px; font-size:12px; text-align:center; }
 th { background:#ffd400; }
-input { width:100%; border:none; padding:4px; }
+input, select { width:100%; border:none; padding:4px; }
 </style>
 
 </head>
@@ -134,7 +144,9 @@ input { width:100%; border:none; padding:4px; }
 
 <div id="appDiv" style="display:none">
 <h1>Rejestr badań – Spółka AS</h1>
+
 <button onclick="dodaj()">➕ Dodaj</button>
+<button onclick="usunZaznaczony()">🗑️ Usuń zaznaczony</button>
 <button onclick="logout()">Wyloguj</button>
 
 <table>
@@ -144,12 +156,13 @@ input { width:100%; border:none; padding:4px; }
 <th>Osoba</th>
 <th>Firma</th>
 <th>Materiał</th>
+<th>Data start</th>
+<th>Data koniec</th>
 <th>VT</th>
 <th>PT</th>
 <th>MT</th>
 <th>UT</th>
 <th>RT</th>
-<th>X</th>
 </tr>
 </thead>
 <tbody id="body"></tbody>
