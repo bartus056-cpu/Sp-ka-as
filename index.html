@@ -44,7 +44,7 @@ tr:nth-child(even) {
 
 <button onclick="dodajWiersz()">➕ Dodaj wiersz</button>
 
-<table id="tabela">
+<table>
 <thead>
 <tr>
     <th>Nr</th>
@@ -88,6 +88,8 @@ function render() {
                     <option ${row.osoba=="Michał"?"selected":""}>Michał</option>
                     <option ${row.osoba=="Grzegorz"?"selected":""}>Grzegorz</option>
                     <option ${row.osoba=="Kevin"?"selected":""}>Kevin</option>
+                    <option ${row.osoba=="Marcel"?"selected":""}>Marcel</option>
+                    <option ${row.osoba=="Bartek"?"selected":""}>Bartek</option>
                 </select>
             </td>
 
@@ -97,16 +99,6 @@ function render() {
             <td><input value="${row.firma || ''}" onchange="update(${i}, 'firma', this.value)"></td>
             <td><input value="${row.probka || ''}" onchange="update(${i}, 'probka', this.value)"></td>
             <td><input value="${row.material || ''}" onchange="update(${i}, 'material', this.value)"></td>
-
-            <td>
-                <select onchange="update(${i}, 'badanie', this.value)">
-                    <option value=""></option>
-                    <option ${row.badanie=="VT"?"selected":""}>VT</option>
-                    <option ${row.badanie=="UT"?"selected":""}>UT</option>
-                    <option ${row.badanie=="MT"?"selected":""}>MT</option>
-                    <option ${row.badanie=="PT"?"selected":""}>PT</option>
-                </select>
-            </td>
 
             <td><input type="checkbox" ${row.vt?"checked":""} onchange="update(${i}, 'vt', this.checked)"></td>
             <td><input type="checkbox" ${row.pt?"checked":""} onchange="update(${i}, 'pt', this.checked)"></td>
