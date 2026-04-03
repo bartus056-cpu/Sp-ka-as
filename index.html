@@ -4,147 +4,157 @@
 <meta charset="UTF-8">
 <title>Rejestr badań – Spółka AS</title>
 
+<!-- Firebase (nowa wersja modularna) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// 🔥 TWOJA KONFIGURACJA (już wklejona)
+const firebaseConfig = {
+  apiKey: "AIzaSyAQ3U0w1Ubp_sm_Vjx6jYCZ5UtGyRIsxug",
+  authDomain: "spolka-as.firebaseapp.com",
+  projectId: "spolka-as",
+  storageBucket: "spolka-as.firebasestorage.app",
+  messagingSenderId: "339018357387",
+  appId: "1:339018357387:web:2b1b1812cef5086f43528e",
+  measurementId: "G-N4R8B303TK"
+};
+
+// init
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let dane = [];
+
+// 🔐 LOGIN
+window.login = () => {
+    signInWithEmailAndPassword(auth, email.value, haslo.value);
+}
+
+// 🆕 REJESTRACJA
+window.register = () => {
+    createUserWithEmailAndPassword(auth, email.value, haslo.value);
+}
+
+// 🚪 WYLOGUJ
+window.logout = () => {
+    signOut(auth);
+}
+
+// 👤 SPRAWDZ USERA
+onAuthStateChanged(auth, user => {
+    if(user){
+        loginDiv.style.display = "none";
+        appDiv.style.display = "block";
+        load();
+    } else {
+        loginDiv.style.display = "block";
+        appDiv.style.display = "none";
+    }
+});
+
+// 🔄 SYNC
+function load(){
+    onSnapshot(collection(db, "rejestr"), snapshot => {
+        dane = [];
+        snapshot.forEach(docSnap => {
+            dane.push({id: docSnap.id, ...docSnap.data()});
+        });
+        render();
+    });
+}
+
+// ➕ DODAJ
+window.dodaj = async () => {
+    await addDoc(collection(db, "rejestr"), {
+        osoba:"",
+        firma:"",
+        material:"",
+        vt:false, pt:false, mt:false, ut:false, rt:false
+    });
+}
+
+// ✏️ UPDATE
+window.update = async (id, key, value) => {
+    await updateDoc(doc(db, "rejestr", id), {
+        [key]: value
+    });
+}
+
+// ❌ DELETE
+window.usun = async (id) => {
+    await deleteDoc(doc(db, "rejestr", id));
+}
+
+// 🎨 RENDER
+function render(){
+    body.innerHTML = "";
+
+    dane.forEach((row, i) => {
+        body.innerHTML += `
+        <tr>
+            <td>${i+1}</td>
+            <td><input value="${row.osoba||""}" onchange="update('${row.id}','osoba',this.value)"></td>
+            <td><input value="${row.firma||""}" onchange="update('${row.id}','firma',this.value)"></td>
+            <td><input value="${row.material||""}" onchange="update('${row.id}','material',this.value)"></td>
+
+            <td><input type="checkbox" ${row.vt?"checked":""} onchange="update('${row.id}','vt',this.checked)"></td>
+            <td><input type="checkbox" ${row.pt?"checked":""} onchange="update('${row.id}','pt',this.checked)"></td>
+            <td><input type="checkbox" ${row.mt?"checked":""} onchange="update('${row.id}','mt',this.checked)"></td>
+            <td><input type="checkbox" ${row.ut?"checked":""} onchange="update('${row.id}','ut',this.checked)"></td>
+            <td><input type="checkbox" ${row.rt?"checked":""} onchange="update('${row.id}','rt',this.checked)"></td>
+
+            <td><button onclick="usun('${row.id}')">X</button></td>
+        </tr>`;
+    });
+}
+</script>
+
 <style>
-body { font-family: Arial; margin: 10px; background:#f0f0f0; }
-h1 { text-align:center; }
-
-table {
-    border-collapse: collapse;
-    width: 100%;
-    background: white;
-}
-
-th, td {
-    border: 1px solid #ccc;
-    padding: 5px;
-    font-size: 12px;
-    text-align: center;
-}
-
-th {
-    background: #ffd400;
-}
-
-input, select {
-    width: 100%;
-    box-sizing: border-box;
-    border: none;
-    padding: 4px;
-}
-
-tr:nth-child(even) {
-    background: #fafafa;
-}
-
-#szukaj {
-    width: 300px;
-    padding: 8px;
-    margin: 10px 0;
-}
+body { font-family: Arial; background:#f0f0f0; padding:20px; }
+table { width:100%; border-collapse: collapse; background:white; }
+th, td { border:1px solid #ccc; padding:5px; font-size:12px; text-align:center; }
+th { background:#ffd400; }
+input { width:100%; border:none; padding:4px; }
 </style>
+
 </head>
 
 <body>
 
+<div id="loginDiv">
+<h2>Logowanie</h2>
+<input id="email" placeholder="email"><br><br>
+<input id="haslo" type="password" placeholder="hasło"><br><br>
+<button onclick="login()">Zaloguj</button>
+<button onclick="register()">Zarejestruj</button>
+</div>
+
+<div id="appDiv" style="display:none">
 <h1>Rejestr badań – Spółka AS</h1>
-
-<input type="text" id="szukaj" placeholder="🔍 Szukaj..." onkeyup="render()">
-
-<br>
-<button onclick="dodajWiersz()">➕ Dodaj wiersz</button>
+<button onclick="dodaj()">➕ Dodaj</button>
+<button onclick="logout()">Wyloguj</button>
 
 <table>
 <thead>
 <tr>
-    <th>Nr</th>
-    <th>Rejestrujący</th>
-    <th>Zamówienie</th>
-    <th>Data rejestracji</th>
-    <th>Data zakończenia</th>
-    <th>Firma</th>
-    <th>Nr próbki / WPS</th>
-    <th>Materiał</th>
-    <th>VT</th>
-    <th>PT</th>
-    <th>MT</th>
-    <th>UT</th>
-    <th>RT</th>
-    <th>Usuń</th>
+<th>Nr</th>
+<th>Osoba</th>
+<th>Firma</th>
+<th>Materiał</th>
+<th>VT</th>
+<th>PT</th>
+<th>MT</th>
+<th>UT</th>
+<th>RT</th>
+<th>X</th>
 </tr>
 </thead>
-
 <tbody id="body"></tbody>
 </table>
-
-<script>
-let dane = JSON.parse(localStorage.getItem("rejestr")) || [];
-
-function zapisz() {
-    localStorage.setItem("rejestr", JSON.stringify(dane));
-}
-
-function render() {
-    const body = document.getElementById("body");
-    const fraza = document.getElementById("szukaj").value.toLowerCase();
-
-    body.innerHTML = "";
-
-    dane.forEach((row, i) => {
-
-        const tekst = Object.values(row).join(" ").toLowerCase();
-        if (!tekst.includes(fraza)) return;
-
-        body.innerHTML += `
-        <tr>
-            <td>${i+1}</td>
-
-            <td>
-                <select onchange="update(${i}, 'osoba', this.value)">
-                    <option ${row.osoba=="Michał"?"selected":""}>Michał</option>
-                    <option ${row.osoba=="Grzegorz"?"selected":""}>Grzegorz</option>
-                    <option ${row.osoba=="Kevin"?"selected":""}>Kevin</option>
-                    <option ${row.osoba=="Marcel"?"selected":""}>Marcel</option>
-                    <option ${row.osoba=="Bartek"?"selected":""}>Bartek</option>
-                </select>
-            </td>
-
-            <td><input value="${row.zam || ''}" onchange="update(${i}, 'zam', this.value)"></td>
-            <td><input type="date" value="${row.start || ''}" onchange="update(${i}, 'start', this.value)"></td>
-            <td><input type="date" value="${row.koniec || ''}" onchange="update(${i}, 'koniec', this.value)"></td>
-            <td><input value="${row.firma || ''}" onchange="update(${i}, 'firma', this.value)"></td>
-            <td><input value="${row.probka || ''}" onchange="update(${i}, 'probka', this.value)"></td>
-            <td><input value="${row.material || ''}" onchange="update(${i}, 'material', this.value)"></td>
-
-            <td><input type="checkbox" ${row.vt?"checked":""} onchange="update(${i}, 'vt', this.checked)"></td>
-            <td><input type="checkbox" ${row.pt?"checked":""} onchange="update(${i}, 'pt', this.checked)"></td>
-            <td><input type="checkbox" ${row.mt?"checked":""} onchange="update(${i}, 'mt', this.checked)"></td>
-            <td><input type="checkbox" ${row.ut?"checked":""} onchange="update(${i}, 'ut', this.checked)"></td>
-            <td><input type="checkbox" ${row.rt?"checked":""} onchange="update(${i}, 'rt', this.checked)"></td>
-
-            <td><button onclick="usun(${i})">X</button></td>
-        </tr>`;
-    });
-
-    zapisz();
-}
-
-function update(i, key, value) {
-    dane[i][key] = value;
-    zapisz();
-}
-
-function dodajWiersz() {
-    dane.push({});
-    render();
-}
-
-function usun(i) {
-    dane.splice(i, 1);
-    render();
-}
-
-render();
-</script>
+</div>
 
 </body>
 </html>
