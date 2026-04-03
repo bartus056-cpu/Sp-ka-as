@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Rejestr badań – Spółka AS</title>
+
+<style>
+body { font-family: Arial; margin: 10px; background:#f0f0f0; }
+h1 { text-align:center; }
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: white;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 5px;
+    font-size: 12px;
+    text-align: center;
+}
+
+th {
+    background: #ffd400;
+}
+
+input, select {
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    padding: 4px;
+}
+
+tr:nth-child(even) {
+    background: #fafafa;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Rejestr badań – Spółka AS</h1>
+
+<button onclick="dodajWiersz()">➕ Dodaj wiersz</button>
+
+<table id="tabela">
+<thead>
+<tr>
+    <th>Nr</th>
+    <th>Rejestrujący</th>
+    <th>Zamówienie</th>
+    <th>Data rejestracji</th>
+    <th>Data zakończenia</th>
+    <th>Firma</th>
+    <th>Nr próbki / WPS</th>
+    <th>Materiał</th>
+    <th>Badanie</th>
+    <th>VT</th>
+    <th>PT</th>
+    <th>MT</th>
+    <th>UT</th>
+    <th>RT</th>
+    <th>Usuń</th>
+</tr>
+</thead>
+
+<tbody id="body"></tbody>
+</table>
+
+<script>
+let dane = JSON.parse(localStorage.getItem("rejestr")) || [];
+
+function zapisz() {
+    localStorage.setItem("rejestr", JSON.stringify(dane));
+}
+
+function render() {
+    const body = document.getElementById("body");
+    body.innerHTML = "";
+
+    dane.forEach((row, i) => {
+        body.innerHTML += `
+        <tr>
+            <td>${i+1}</td>
+
+            <td>
+                <select onchange="update(${i}, 'osoba', this.value)">
+                    <option ${row.osoba=="Michał"?"selected":""}>Michał</option>
+                    <option ${row.osoba=="Grzegorz"?"selected":""}>Grzegorz</option>
+                </select>
+            </td>
+
+            <td><input value="${row.zam || ''}" onchange="update(${i}, 'zam', this.value)"></td>
+            <td><input type="date" value="${row.start || ''}" onchange="update(${i}, 'start', this.value)"></td>
+            <td><input type="date" value="${row.koniec || ''}" onchange="update(${i}, 'koniec', this.value)"></td>
+            <td><input value="${row.firma || ''}" onchange="update(${i}, 'firma', this.value)"></td>
+            <td><input value="${row.probka || ''}" onchange="update(${i}, 'probka', this.value)"></td>
+            <td><input value="${row.material || ''}" onchange="update(${i}, 'material', this.value)"></td>
+
+            <td>
+                <select onchange="update(${i}, 'badanie', this.value)">
+                    <option value=""></option>
+                    <option ${row.badanie=="VT"?"selected":""}>VT</option>
+                    <option ${row.badanie=="UT"?"selected":""}>UT</option>
+                    <option ${row.badanie=="MT"?"selected":""}>MT</option>
+                    <option ${row.badanie=="PT"?"selected":""}>PT</option>
+                </select>
+            </td>
+
+            <td><input type="checkbox" ${row.vt?"checked":""} onchange="update(${i}, 'vt', this.checked)"></td>
+            <td><input type="checkbox" ${row.pt?"checked":""} onchange="update(${i}, 'pt', this.checked)"></td>
+            <td><input type="checkbox" ${row.mt?"checked":""} onchange="update(${i}, 'mt', this.checked)"></td>
+            <td><input type="checkbox" ${row.ut?"checked":""} onchange="update(${i}, 'ut', this.checked)"></td>
+            <td><input type="checkbox" ${row.rt?"checked":""} onchange="update(${i}, 'rt', this.checked)"></td>
+
+            <td><button onclick="usun(${i})">X</button></td>
+        </tr>`;
+    });
+
+    zapisz();
+}
+
+function update(i, key, value) {
+    dane[i][key] = value;
+    zapisz();
+}
+
+function dodajWiersz() {
+    dane.push({});
+    render();
+}
+
+function usun(i) {
+    dane.splice(i, 1);
+    render();
+}
+
+render();
+</script>
+
+</body>
+</html>
