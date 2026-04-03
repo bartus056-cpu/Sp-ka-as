@@ -25,12 +25,12 @@ const db = getFirestore(app);
 let dane = [];
 let zaznaczony = null;
 
-// LOGIN
+// LOGIN / REGISTER / LOGOUT
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
 window.register = () => createUserWithEmailAndPassword(auth, email.value, haslo.value);
 window.logout = () => signOut(auth);
 
-// USER
+// AUTH STATE
 onAuthStateChanged(auth, user => {
     if(user){
         loginDiv.style.display = "none";
@@ -42,7 +42,7 @@ onAuthStateChanged(auth, user => {
     }
 });
 
-// SYNC
+// LOAD + SYNC
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -53,7 +53,7 @@ function load(){
     });
 }
 
-// DODAJ
+// ADD
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         osoba:"",
@@ -70,16 +70,16 @@ window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// ZAZNACZ WIERSZ
+// SELECT ROW
 window.selectRow = (id) => {
-    zaznaczony = id;
+    zaznaczony = (zaznaczony === id) ? null : id;
     render();
 }
 
-// USUŃ ZAZNACZONY
+// DELETE SELECTED
 window.usunZaznaczony = async () => {
     if(!zaznaczony){
-        alert("Najpierw wybierz wiersz!");
+        alert("Najpierw zaznacz wiersz!");
         return;
     }
     await deleteDoc(doc(db, "rejestr", zaznaczony));
@@ -92,7 +92,14 @@ function render(){
 
     dane.forEach((row, i) => {
         body.innerHTML += `
-        <tr onclick="selectRow('${row.id}')" style="${zaznaczony===row.id ? 'background:#cce5ff' : ''}">
+        <tr style="${zaznaczony===row.id ? 'background:#cce5ff' : ''}">
+            
+            <td>
+                <input type="checkbox" 
+                ${zaznaczony===row.id ? "checked" : ""} 
+                onclick="selectRow('${row.id}')">
+            </td>
+
             <td>${i+1}</td>
 
             <td>
@@ -152,6 +159,7 @@ input, select { width:100%; border:none; padding:4px; }
 <table>
 <thead>
 <tr>
+<th>✔</th>
 <th>Nr</th>
 <th>Osoba</th>
 <th>Firma</th>
