@@ -35,6 +35,12 @@ input, select {
 tr:nth-child(even) {
     background: #fafafa;
 }
+
+#szukaj {
+    width: 300px;
+    padding: 8px;
+    margin: 10px 0;
+}
 </style>
 </head>
 
@@ -42,6 +48,9 @@ tr:nth-child(even) {
 
 <h1>Rejestr badań – Spółka AS</h1>
 
+<input type="text" id="szukaj" placeholder="🔍 Szukaj..." onkeyup="render()">
+
+<br>
 <button onclick="dodajWiersz()">➕ Dodaj wiersz</button>
 
 <table>
@@ -76,9 +85,15 @@ function zapisz() {
 
 function render() {
     const body = document.getElementById("body");
+    const fraza = document.getElementById("szukaj").value.toLowerCase();
+
     body.innerHTML = "";
 
     dane.forEach((row, i) => {
+
+        const tekst = Object.values(row).join(" ").toLowerCase();
+        if (!tekst.includes(fraza)) return;
+
         body.innerHTML += `
         <tr>
             <td>${i+1}</td>
