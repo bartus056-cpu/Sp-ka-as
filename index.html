@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Rejestr badań – Spółka AS</title>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAQ3U0w1Ubp_sm_Vjx6jYCZ5UtGyRIsxug",
@@ -27,13 +26,32 @@ let currentUser = "";
 
 // 🔐 LOGIN
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
-window.register = () => createUserWithEmailAndPassword(auth, email.value, haslo.value);
+
+// 🆕 REJESTRACJA (z imieniem)
+window.register = async () => {
+    const userCred = await createUserWithEmailAndPassword(auth, email.value, haslo.value);
+
+    await setDoc(doc(db, "users", userCred.user.uid), {
+        name: imie.value,
+        email: email.value
+    });
+}
+
+// 🚪 WYLOGUJ
 window.logout = () => signOut(auth);
 
-// 👤 USER
-onAuthStateChanged(auth, user => {
+// 👤 USER + imię
+onAuthStateChanged(auth, async user => {
     if(user){
-        currentUser = user.email || "pracownik";
+        const ref = doc(db, "users", user.uid);
+        const snap = await getDoc(ref);
+
+        if(snap.exists()){
+            currentUser = snap.data().name;
+        } else {
+            currentUser = user.email;
+        }
+
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
         load();
@@ -43,13 +61,12 @@ onAuthStateChanged(auth, user => {
     }
 });
 
-// 📅 DZISIEJSZA DATA
+// 📅 dzisiejsza data
 function today(){
-    const d = new Date();
-    return d.toISOString().split("T")[0];
+    return new Date().toISOString().split("T")[0];
 }
 
-// 🔄 SYNC
+// 🔄 sync
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -60,7 +77,7 @@ function load(){
     });
 }
 
-// ➕ DODAJ
+// ➕ dodaj
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         rejestrujacy: currentUser,
@@ -73,32 +90,32 @@ window.dodaj = async () => {
     });
 }
 
-// ✏️ UPDATE
+// ✏️ update
 window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// ❌ DELETE
+// ❌ delete
 window.usunZaznaczony = async () => {
     if(!zaznaczony) return alert("Wybierz wiersz");
     await deleteDoc(doc(db, "rejestr", zaznaczony));
     zaznaczony = null;
 }
 
-// 🎯 SELECT
+// 🎯 select
 window.selectRow = (id) => {
     zaznaczony = zaznaczony === id ? null : id;
     render();
 }
 
-// 🔍 WYSZUKIWARKA
+// 🔍 wyszukiwarka
 function filtruj(dane, fraza){
     return dane.filter(row => 
         Object.values(row).join(" ").toLowerCase().includes(fraza)
     );
 }
 
-// 🔢 SELECT 1-99
+// 🔢 dropdown
 function opcje(val){
     let html = `<option value=""></option>`;
     for(let i=1;i<=99;i++){
@@ -107,7 +124,7 @@ function opcje(val){
     return html;
 }
 
-// 🎨 RENDER
+// 🎨 render
 function render(){
     const fraza = search.value.toLowerCase();
     const lista = filtruj(dane, fraza);
@@ -162,7 +179,7 @@ table{min-width:1200px;background:white;border-collapse:collapse;}
 th{background:#3498db;color:white;padding:8px;}
 td{padding:6px;border-bottom:1px solid #eee;}
 .active{background:#d6eaff;}
-.search{padding:10px;text-align:center;}
+.search{text-align:center;padding:10px;}
 .search input{width:250px;padding:8px;}
 </style>
 
@@ -171,9 +188,12 @@ td{padding:6px;border-bottom:1px solid #eee;}
 <body>
 
 <div id="loginDiv" style="text-align:center;padding:40px;">
-<h2>Logowanie</h2>
-<input id="email"><br><br>
-<input id="haslo" type="password"><br><br>
+<h2>Logowanie / Rejestracja</h2>
+
+<input id="imie" placeholder="Imię i nazwisko"><br><br>
+<input id="email" placeholder="Email"><br><br>
+<input id="haslo" type="password" placeholder="Hasło"><br><br>
+
 <button onclick="login()">Zaloguj</button>
 <button onclick="register()">Zarejestruj</button>
 </div>
