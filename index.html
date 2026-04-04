@@ -22,7 +22,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let dane = [];
-let zaznaczone = new Set(); // 🔥 multi select
+let zaznaczone = new Set();
 let currentUser = "";
 
 // LOGIN
@@ -43,20 +43,17 @@ window.logout = () => signOut(auth);
 // USER
 const dozwoleni = [
   "g.rozek@spolkas.pl",
-  "bartus056@gmail.com",
-  "bartekrozek@icloud.com"
+  "bartus056@gmail.com"
 ];
 
 onAuthStateChanged(auth, async user => {
     if(user && dozwoleni.includes(user.email)){
-
         const snap = await getDoc(doc(db, "users", user.uid));
         currentUser = snap.exists() ? snap.data().name : user.email;
 
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
         load();
-
     } else {
         alert("Brak dostępu");
         await signOut(auth);
@@ -85,6 +82,10 @@ window.dodaj = async () => {
         rejestrujacy: currentUser,
         firma:"",
         material:"",
+        zamowienie:"",
+        nr_probki:"",
+        rodzaj:"",
+        info:"",
         start: today(),
         koniec:"",
         vt:"", pt:"", mt:"", ut:"", rt:"",
@@ -111,7 +112,7 @@ window.usunZaznaczony = async () => {
     zaznaczone.clear();
 }
 
-// SELECT MULTI
+// SELECT
 window.selectRow = (id) => {
     if(zaznaczone.has(id)){
         zaznaczone.delete(id);
@@ -147,6 +148,11 @@ function render(){
             <td><input value="${row.firma||""}" onchange="update('${row.id}','firma',this.value)"></td>
             <td><input value="${row.material||""}" onchange="update('${row.id}','material',this.value)"></td>
 
+            <td><input value="${row.zamowienie||""}" onchange="update('${row.id}','zamowienie',this.value)"></td>
+            <td><input value="${row.nr_probki||""}" onchange="update('${row.id}','nr_probki',this.value)"></td>
+            <td><input value="${row.rodzaj||""}" onchange="update('${row.id}','rodzaj',this.value)"></td>
+            <td><input value="${row.info||""}" onchange="update('${row.id}','info',this.value)"></td>
+
             <td><input type="date" value="${row.start||today()}" onchange="update('${row.id}','start',this.value)"></td>
             <td><input type="date" value="${row.koniec||""}" onchange="update('${row.id}','koniec',this.value)"></td>
 
@@ -168,7 +174,7 @@ function render(){
     initSearch();
 }
 
-// 🔍 WYSZUKIWARKA (twoja, nietknięta)
+// WYSZUKIWARKA
 function initSearch(){
     const search = document.getElementById("search");
 
@@ -178,7 +184,6 @@ function initSearch(){
             const rows = document.querySelectorAll("#body tr");
 
             rows.forEach(row => {
-
                 let text = row.innerText.toLowerCase();
 
                 row.querySelectorAll("input").forEach(input => {
@@ -211,7 +216,7 @@ button{padding:10px;margin:5px;border:none;border-radius:8px;}
 .search input{width:250px;padding:8px;}
 .nowrap{white-space:nowrap;}
 .table-container{overflow-x:auto;padding:10px;}
-table{min-width:1400px;width:max-content;background:white;border-collapse:collapse;}
+table{min-width:1600px;width:max-content;background:white;border-collapse:collapse;}
 th{background:#3498db;color:white;padding:8px;}
 td{padding:6px;border-bottom:1px solid #eee;}
 input,select{padding:5px;border:none;background:#f4f6f8;}
@@ -257,6 +262,10 @@ input,select{padding:5px;border:none;background:#f4f6f8;}
 <th>Rejestrujący</th>
 <th>Firma</th>
 <th>Materiał</th>
+<th>Zamówienie</th>
+<th>Nr próbki</th>
+<th>Rodzaj złącza/badania</th>
+<th>Ważne informacje</th>
 <th>Data Rejestracji</th>
 <th>Data Zakończenia</th>
 <th>VT</th><th>PT</th><th>MT</th><th>UT</th><th>RT</th>
