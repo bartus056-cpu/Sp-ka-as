@@ -22,7 +22,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let dane = [];
-let zaznaczone = new Set(); // 🔥 zmiana
+let zaznaczone = new Set(); // 🔥 multi select
 let currentUser = "";
 
 // LOGIN
@@ -96,14 +96,12 @@ window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// DELETE (🔥 multi)
+// DELETE MULTI
 window.usunZaznaczony = async () => {
     if(zaznaczone.size === 0){
         alert("Wybierz wiersze");
         return;
     }
-
-    if(!confirm("Usunąć zaznaczone wiersze?")) return;
 
     for(const id of zaznaczone){
         await deleteDoc(doc(db, "rejestr", id));
@@ -112,7 +110,7 @@ window.usunZaznaczony = async () => {
     zaznaczone.clear();
 }
 
-// SELECT (🔥 multi)
+// SELECT MULTI
 window.selectRow = (id) => {
     if(zaznaczone.has(id)){
         zaznaczone.delete(id);
@@ -140,7 +138,7 @@ function render(){
         <tr class="${zaznaczone.has(row.id) ? 'active' : ''}">
             <td><input type="checkbox"
                 ${zaznaczone.has(row.id)?"checked":""}
-                onclick="event.stopPropagation(); selectRow('${row.id}')"></td>
+                onclick="selectRow('${row.id}')"></td>
 
             <td>${i+1}</td>
             <td class="nowrap">${row.rejestrujacy || ""}</td>
@@ -169,7 +167,7 @@ function render(){
     initSearch();
 }
 
-// 🔍 WYSZUKIWARKA (NIE RUSZANA)
+// 🔍 WYSZUKIWARKA (twoja, nietknięta)
 function initSearch(){
     const search = document.getElementById("search");
 
@@ -198,3 +196,77 @@ function initSearch(){
     }
 }
 </script>
+
+<style>
+body{margin:0;font-family:Arial;background:#eef2f7;}
+.header{text-align:center;padding:20px;background:white;}
+.header img{height:60px;}
+.topbar{text-align:center;padding:10px;}
+button{padding:10px;margin:5px;border:none;border-radius:8px;}
+.btn-add{background:#3498db;color:white;}
+.btn-delete{background:#e74c3c;color:white;}
+.btn-logout{background:#7f8c8d;color:white;}
+.search{text-align:center;padding:10px;}
+.search input{width:250px;padding:8px;}
+.nowrap{white-space:nowrap;}
+.table-container{overflow-x:auto;padding:10px;}
+table{min-width:1400px;width:max-content;background:white;border-collapse:collapse;}
+th{background:#3498db;color:white;padding:8px;}
+td{padding:6px;border-bottom:1px solid #eee;}
+input,select{padding:5px;border:none;background:#f4f6f8;}
+.active{background:#d6eaff;}
+</style>
+
+</head>
+
+<body>
+
+<div id="loginDiv" style="text-align:center;padding:40px;">
+<h2>Logowanie</h2>
+<input id="imie" placeholder="Imię i nazwisko"><br><br>
+<input id="email"><br><br>
+<input id="haslo" type="password"><br><br>
+<button onclick="login()">Zaloguj</button>
+<button onclick="register()">Zarejestruj</button>
+</div>
+
+<div id="appDiv" style="display:none">
+
+<div class="header">
+<img src="logo.png">
+<h2>Rejestr badań – Spółka AS</h2>
+</div>
+
+<div class="topbar">
+<button class="btn-add" onclick="dodaj()">Dodaj</button>
+<button class="btn-delete" onclick="usunZaznaczony()">Usuń</button>
+<button class="btn-logout" onclick="logout()">Wyloguj</button>
+</div>
+
+<div class="search">
+<input id="search" placeholder="🔍 Szukaj...">
+</div>
+
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>✔</th>
+<th>Nr</th>
+<th>Rejestrujący</th>
+<th>Firma</th>
+<th>Materiał</th>
+<th>Data Rejestracji</th>
+<th>Data Zakończenia</th>
+<th>VT</th><th>PT</th><th>MT</th><th>UT</th><th>RT</th>
+<th>R</th><th>G</th><th>MA</th><th>MI</th><th>HV</th><th>KV</th>
+</tr>
+</thead>
+<tbody id="body"></tbody>
+</table>
+</div>
+
+</div>
+
+</body>
+</html>
