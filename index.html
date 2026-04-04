@@ -42,9 +42,8 @@ window.logout = () => signOut(auth);
 
 // USER
 const dozwoleni = [
-  "g.rozek@spolkaas.pl",
-  "bartus056@gmail.com",
-  "g.rozek@spolkaas.pl"
+  "g.rozek@spolkas.pl",
+  "bartus056@gmail.com"
 ];
 
 onAuthStateChanged(auth, async user => {
@@ -87,6 +86,7 @@ window.dodaj = async () => {
         nr_probki:"",
         rodzaj:"",
         info:"",
+        status:"",
         start: today(),
         koniec:"",
         vt:"", pt:"", mt:"", ut:"", rt:"",
@@ -113,7 +113,7 @@ window.usunZaznaczony = async () => {
     zaznaczone.clear();
 }
 
-// SELECT
+// SELECT (checkbox)
 window.selectRow = (id) => {
     if(zaznaczone.has(id)){
         zaznaczone.delete(id);
@@ -121,6 +121,16 @@ window.selectRow = (id) => {
         zaznaczone.add(id);
     }
     render();
+}
+
+// STATUS (klik w wiersz)
+window.toggleStatus = async (id) => {
+    const row = dane.find(r => r.id === id);
+    const newStatus = row.status === "done" ? "" : "done";
+
+    await updateDoc(doc(db, "rejestr", id), {
+        status: newStatus
+    });
 }
 
 // OPTIONS
@@ -138,10 +148,14 @@ function render(){
 
     dane.forEach((row, i) => {
         body.innerHTML += `
-        <tr class="${zaznaczone.has(row.id) ? 'active' : ''}">
-            <td><input type="checkbox"
+        <tr onclick="toggleStatus('${row.id}')"
+        class="${zaznaczone.has(row.id) ? 'active' : ''} ${row.status === 'done' ? 'done' : ''}">
+        
+            <td>
+                <input type="checkbox"
                 ${zaznaczone.has(row.id)?"checked":""}
-                onclick="selectRow('${row.id}')"></td>
+                onclick="event.stopPropagation(); selectRow('${row.id}')">
+            </td>
 
             <td>${i+1}</td>
             <td class="nowrap">${row.rejestrujacy || ""}</td>
@@ -152,7 +166,11 @@ function render(){
             <td><input value="${row.zamowienie||""}" onchange="update('${row.id}','zamowienie',this.value)"></td>
             <td><input value="${row.nr_probki||""}" onchange="update('${row.id}','nr_probki',this.value)"></td>
             <td><input value="${row.rodzaj||""}" onchange="update('${row.id}','rodzaj',this.value)"></td>
-            <td><input value="${row.info||""}" onchange="update('${row.id}','info',this.value)"></td>
+
+            <td>
+            <textarea onchange="update('${row.id}','info',this.value)" style="min-width:200px;height:60px;">
+${row.info||""}</textarea>
+            </td>
 
             <td><input type="date" value="${row.start||today()}" onchange="update('${row.id}','start',this.value)"></td>
             <td><input type="date" value="${row.koniec||""}" onchange="update('${row.id}','koniec',this.value)"></td>
@@ -175,7 +193,7 @@ function render(){
     initSearch();
 }
 
-// WYSZUKIWARKA
+// SEARCH (twoja — nietknięta)
 function initSearch(){
     const search = document.getElementById("search");
 
@@ -207,7 +225,6 @@ function initSearch(){
 <style>
 body{margin:0;font-family:Arial;background:#eef2f7;}
 .header{text-align:center;padding:20px;background:white;}
-.header img{height:60px;}
 .topbar{text-align:center;padding:10px;}
 button{padding:10px;margin:5px;border:none;border-radius:8px;}
 .btn-add{background:#3498db;color:white;}
@@ -217,11 +234,12 @@ button{padding:10px;margin:5px;border:none;border-radius:8px;}
 .search input{width:250px;padding:8px;}
 .nowrap{white-space:nowrap;}
 .table-container{overflow-x:auto;padding:10px;}
-table{min-width:1600px;width:max-content;background:white;border-collapse:collapse;}
+table{min-width:1700px;width:max-content;background:white;border-collapse:collapse;}
 th{background:#3498db;color:white;padding:8px;}
 td{padding:6px;border-bottom:1px solid #eee;}
-input,select{padding:5px;border:none;background:#f4f6f8;}
+input,select,textarea{padding:5px;border:none;background:#f4f6f8;}
 .active{background:#d6eaff;}
+.done{background:#ffcccc !important;}
 </style>
 
 </head>
@@ -240,8 +258,13 @@ input,select{padding:5px;border:none;background:#f4f6f8;}
 <div id="appDiv" style="display:none">
 
 <div class="header">
-<img src="logo.png">
 <h2>Rejestr badań – Spółka AS</h2>
+</div>
+
+<div style="text-align:center;padding:5px;">
+<span style="background:red;color:white;padding:5px 10px;border-radius:5px;">
+Kliknij wiersz = Faktura wystawiona
+</span>
 </div>
 
 <div class="topbar">
@@ -264,8 +287,8 @@ input,select{padding:5px;border:none;background:#f4f6f8;}
 <th>Firma</th>
 <th>Materiał</th>
 <th>Zamówienie</th>
-<th>Nr próbki</th>
-<th>Rodzaj złącza/badania</th>
+<th>Nr próbki/WPS</th>
+<th>Rodzaj</th>
 <th>Ważne informacje</th>
 <th>Data Rejestracji</th>
 <th>Data Zakończenia</th>
