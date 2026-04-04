@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rejestr badań – Spółka AS</title>
 
 <script type="module">
@@ -25,12 +26,10 @@ const db = getFirestore(app);
 let dane = [];
 let zaznaczony = null;
 
-// LOGIN / REGISTER / LOGOUT
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
 window.register = () => createUserWithEmailAndPassword(auth, email.value, haslo.value);
 window.logout = () => signOut(auth);
 
-// AUTH STATE
 onAuthStateChanged(auth, user => {
     if(user){
         loginDiv.style.display = "none";
@@ -42,7 +41,6 @@ onAuthStateChanged(auth, user => {
     }
 });
 
-// LOAD + SYNC
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -53,7 +51,6 @@ function load(){
     });
 }
 
-// ADD
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         osoba:"",
@@ -65,39 +62,34 @@ window.dodaj = async () => {
     });
 }
 
-// UPDATE
 window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// SELECT ROW
 window.selectRow = (id) => {
-    zaznaczony = (zaznaczony === id) ? null : id;
+    zaznaczony = zaznaczony === id ? null : id;
     render();
 }
 
-// DELETE SELECTED
 window.usunZaznaczony = async () => {
     if(!zaznaczony){
-        alert("Najpierw zaznacz wiersz!");
+        alert("Wybierz wiersz");
         return;
     }
     await deleteDoc(doc(db, "rejestr", zaznaczony));
     zaznaczony = null;
 }
 
-// RENDER
 function render(){
     body.innerHTML = "";
 
     dane.forEach((row, i) => {
         body.innerHTML += `
-        <tr style="${zaznaczony===row.id ? 'background:#cce5ff' : ''}">
-            
+        <tr class="${zaznaczony===row.id ? 'active' : ''}">
             <td>
-                <input type="checkbox" 
-                ${zaznaczony===row.id ? "checked" : ""} 
-                onclick="selectRow('${row.id}')">
+                <input type="checkbox"
+                ${zaznaczony===row.id ? "checked":""}
+                onclick="event.stopPropagation(); selectRow('${row.id}')">
             </td>
 
             <td>${i+1}</td>
@@ -130,11 +122,81 @@ function render(){
 </script>
 
 <style>
-body { font-family: Arial; background:#f0f0f0; padding:20px; }
-table { width:100%; border-collapse: collapse; background:white; }
-th, td { border:1px solid #ccc; padding:5px; font-size:12px; text-align:center; }
-th { background:#ffd400; }
-input, select { width:100%; border:none; padding:4px; }
+body {
+    margin:0;
+    font-family: Arial;
+    background:#f4f6f8;
+}
+
+/* HEADER */
+.header {
+    background:white;
+    padding:10px 20px;
+    display:flex;
+    align-items:center;
+    gap:15px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+.header img {
+    height:40px;
+}
+
+.header h1 {
+    font-size:18px;
+    margin:0;
+}
+
+/* BUTTONS */
+.topbar {
+    padding:10px;
+}
+
+button {
+    padding:10px 15px;
+    border:none;
+    background:#ffd400;
+    cursor:pointer;
+    font-weight:bold;
+    border-radius:6px;
+}
+
+button:hover {
+    background:#e6c200;
+}
+
+/* TABLE */
+.table-container {
+    overflow-x:auto;
+    padding:10px;
+}
+
+table {
+    min-width:900px;
+    border-collapse: collapse;
+    background:white;
+}
+
+th, td {
+    border:1px solid #ddd;
+    padding:8px;
+    text-align:center;
+}
+
+th {
+    background:#ffd400;
+}
+
+input, select {
+    width:100%;
+    padding:6px;
+    border:none;
+    background:#f9f9f9;
+}
+
+.active {
+    background:#cce5ff;
+}
 </style>
 
 </head>
@@ -142,20 +204,29 @@ input, select { width:100%; border:none; padding:4px; }
 <body>
 
 <div id="loginDiv">
-<h2>Logowanie</h2>
+<h2 style="padding:20px">Logowanie</h2>
+<div style="padding:20px">
 <input id="email" placeholder="email"><br><br>
 <input id="haslo" type="password" placeholder="hasło"><br><br>
 <button onclick="login()">Zaloguj</button>
 <button onclick="register()">Zarejestruj</button>
 </div>
+</div>
 
 <div id="appDiv" style="display:none">
+
+<div class="header">
+<img src="logo.png">
 <h1>Rejestr badań – Spółka AS</h1>
+</div>
 
+<div class="topbar">
 <button onclick="dodaj()">➕ Dodaj</button>
-<button onclick="usunZaznaczony()">🗑️ Usuń zaznaczony</button>
+<button onclick="usunZaznaczony()">🗑️ Usuń</button>
 <button onclick="logout()">Wyloguj</button>
+</div>
 
+<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -164,8 +235,8 @@ input, select { width:100%; border:none; padding:4px; }
 <th>Osoba</th>
 <th>Firma</th>
 <th>Materiał</th>
-<th>Data start</th>
-<th>Data koniec</th>
+<th>Start</th>
+<th>Koniec</th>
 <th>VT</th>
 <th>PT</th>
 <th>MT</th>
@@ -177,4 +248,7 @@ input, select { width:100%; border:none; padding:4px; }
 </table>
 </div>
 
+</div>
+
 </body>
+</html>
