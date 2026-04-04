@@ -125,45 +125,47 @@ function render(){
 body {
     margin:0;
     font-family: Arial;
-    background:#f4f6f8;
+    background:#eef2f7;
 }
 
 /* HEADER */
 .header {
     background:white;
-    padding:10px 20px;
-    display:flex;
-    align-items:center;
-    gap:15px;
-    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    text-align:center;
+    padding:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
 }
 
 .header img {
-    height:40px;
+    height:60px;
 }
 
 .header h1 {
-    font-size:18px;
-    margin:0;
+    margin-top:10px;
+    color:#2c3e50;
 }
 
 /* BUTTONS */
 .topbar {
-    padding:10px;
+    text-align:center;
+    padding:15px;
 }
 
 button {
-    padding:10px 15px;
+    padding:12px 18px;
+    margin:5px;
     border:none;
-    background:#ffd400;
-    cursor:pointer;
+    border-radius:10px;
     font-weight:bold;
-    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
 }
 
-button:hover {
-    background:#e6c200;
-}
+.btn-add { background:#3498db; color:white; }
+.btn-delete { background:#e74c3c; color:white; }
+.btn-logout { background:#7f8c8d; color:white; }
+
+button:hover { opacity:0.9; }
 
 /* TABLE */
 .table-container {
@@ -175,27 +177,31 @@ table {
     min-width:900px;
     border-collapse: collapse;
     background:white;
-}
-
-th, td {
-    border:1px solid #ddd;
-    padding:8px;
-    text-align:center;
+    border-radius:12px;
+    overflow:hidden;
 }
 
 th {
-    background:#ffd400;
+    background:#3498db;
+    color:white;
+    padding:10px;
+}
+
+td {
+    padding:8px;
+    border-bottom:1px solid #eee;
 }
 
 input, select {
     width:100%;
     padding:6px;
     border:none;
-    background:#f9f9f9;
+    background:#f7f9fc;
+    border-radius:5px;
 }
 
 .active {
-    background:#cce5ff;
+    background:#d6eaff;
 }
 </style>
 
@@ -203,14 +209,12 @@ input, select {
 
 <body>
 
-<div id="loginDiv">
-<h2 style="padding:20px">Logowanie</h2>
-<div style="padding:20px">
+<div id="loginDiv" style="text-align:center; padding:40px;">
+<h2>Logowanie</h2>
 <input id="email" placeholder="email"><br><br>
 <input id="haslo" type="password" placeholder="hasło"><br><br>
 <button onclick="login()">Zaloguj</button>
 <button onclick="register()">Zarejestruj</button>
-</div>
 </div>
 
 <div id="appDiv" style="display:none">
@@ -221,9 +225,9 @@ input, select {
 </div>
 
 <div class="topbar">
-<button onclick="dodaj()">➕ Dodaj</button>
-<button onclick="usunZaznaczony()">🗑️ Usuń</button>
-<button onclick="logout()">Wyloguj</button>
+<button class="btn-add" onclick="dodaj()">➕ Dodaj</button>
+<button class="btn-delete" onclick="usunZaznaczony()">🗑️ Usuń</button>
+<button class="btn-logout" onclick="logout()">Wyloguj</button>
 </div>
 
 <div class="table-container">
