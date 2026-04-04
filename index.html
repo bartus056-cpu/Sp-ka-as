@@ -159,10 +159,23 @@ function initSearch(){
             const rows = document.querySelectorAll("#body tr");
 
             rows.forEach(row => {
-                const txt = row.innerText.toLowerCase();
-                row.style.display = txt.includes(fraza) ? "" : "none";
+
+                let text = row.innerText.toLowerCase();
+
+                // 🔥 inputy
+                row.querySelectorAll("input").forEach(input => {
+                    text += " " + input.value.toLowerCase();
+                });
+
+                // 🔥 selecty
+                row.querySelectorAll("select").forEach(select => {
+                    text += " " + select.value.toLowerCase();
+                });
+
+                row.style.display = text.includes(fraza) ? "" : "none";
             });
         });
+
         search.dataset.ready = "1";
     }
 }
