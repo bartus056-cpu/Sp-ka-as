@@ -41,20 +41,26 @@ window.register = async () => {
 window.logout = () => signOut(auth);
 
 // USER
+const dozwoleni = [
+  "g.rozek@spolkas.pl",
+  "bartus056@gmail.com"
+  ];
+
 onAuthStateChanged(auth, async user => {
-    if(user){
+    if(user && dozwoleni.includes(user.email)){
+
         const snap = await getDoc(doc(db, "users", user.uid));
         currentUser = snap.exists() ? snap.data().name : user.email;
 
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
         load();
+
     } else {
-        loginDiv.style.display = "block";
-        appDiv.style.display = "none";
+        alert("Brak dostępu");
+        await signOut(auth);
     }
 });
-
 // DATA
 function today(){
     return new Date().toISOString().split("T")[0];
@@ -211,7 +217,6 @@ input,select{padding:5px;border:none;background:#f4f6f8;}
 <input id="email"><br><br>
 <input id="haslo" type="password"><br><br>
 <button onclick="login()">Zaloguj</button>
-<button onclick="register()">Zarejestruj</button>
 </div>
 
 <div id="appDiv" style="display:none">
