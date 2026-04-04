@@ -40,23 +40,20 @@ window.register = async () => {
 // LOGOUT
 window.logout = () => signOut(auth);
 
-// USER
-const dozwoleni = [
-  "g.rozek@spolkas.pl",
-  "bartus056@gmail.com"
-];
-
+// ✅ USUNIĘTA BLOKADA MAILI
 onAuthStateChanged(auth, async user => {
-    if(user && dozwoleni.includes(user.email)){
+    if(user){
+
         const snap = await getDoc(doc(db, "users", user.uid));
         currentUser = snap.exists() ? snap.data().name : user.email;
 
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
         load();
+
     } else {
-        alert("Brak dostępu");
-        await signOut(auth);
+        loginDiv.style.display = "block";
+        appDiv.style.display = "none";
     }
 });
 
@@ -65,7 +62,7 @@ function today(){
     return new Date().toISOString().split("T")[0];
 }
 
-// LOAD (🔥 FIX SORTOWANIA)
+// LOAD
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -73,14 +70,13 @@ function load(){
             dane.push({id: docSnap.id, ...docSnap.data()});
         });
 
-        // 🔥 ZAWSZE najnowsze na górze
         dane.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
         render();
     });
 }
 
-// ADD (🔥 timestamp)
+// ADD
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         rejestrujacy: currentUser,
@@ -93,7 +89,7 @@ window.dodaj = async () => {
         status:"",
         start: today(),
         koniec:"",
-        createdAt: Date.now(), // 🔥 KLUCZ
+        createdAt: Date.now(),
 
         vt:"", pt:"", mt:"", ut:"", rt:"",
         r:"", g:"", hv:"", kv:"", ma:"", mi:""
