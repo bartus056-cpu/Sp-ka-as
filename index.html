@@ -28,7 +28,7 @@ let currentUser = "";
 // LOGIN
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
 
-// REGISTER (imię + nazwisko)
+// REGISTER
 window.register = async () => {
     const userCred = await createUserWithEmailAndPassword(auth, email.value, haslo.value);
     await setDoc(doc(db, "users", userCred.user.uid), {
@@ -112,31 +112,18 @@ function opcje(val){
     return html;
 }
 
-// RENDER (NAPRAWIONY)
+// 🔍 RENDER (NAPRAWIONY NA STAŁE)
 function render(){
 
     const searchInput = document.getElementById("search");
-    const filterInput = document.getElementById("filterOsoba");
-
     const fraza = searchInput ? searchInput.value.toLowerCase() : "";
-    const osoba = filterInput ? filterInput.value : "";
 
-    let lista = dane.filter(row => {
-        const tekst = Object.values(row).join(" ").toLowerCase();
-        return tekst.includes(fraza);
+    const lista = dane.filter(row => {
+        return Object.values(row)
+            .join(" ")
+            .toLowerCase()
+            .includes(fraza);
     });
-
-    if(osoba){
-        lista = lista.filter(r => r.rejestrujacy === osoba);
-    }
-
-    // lista osób do filtra
-    if(filterInput){
-        const osoby = [...new Set(dane.map(r => r.rejestrujacy).filter(Boolean))];
-        filterInput.innerHTML =
-            `<option value="">-- filtruj po osobie --</option>` +
-            osoby.map(o => `<option ${o===osoba?"selected":""}>${o}</option>`).join("");
-    }
 
     body.innerHTML = "";
 
@@ -148,7 +135,8 @@ function render(){
                 onclick="event.stopPropagation(); selectRow('${row.id}')"></td>
 
             <td>${i+1}</td>
-            <td>${row.rejestrujacy || ""}</td>
+
+            <td class="nowrap">${row.rejestrujacy || ""}</td>
 
             <td><input value="${row.firma||""}" onchange="update('${row.id}','firma',this.value)"></td>
             <td><input value="${row.material||""}" onchange="update('${row.id}','material',this.value)"></td>
@@ -175,21 +163,68 @@ function render(){
 
 <style>
 body{margin:0;font-family:Arial;background:#eef2f7;}
+
 .header{text-align:center;padding:20px;background:white;}
 .header img{height:60px;}
+
 .topbar{text-align:center;padding:10px;}
-button{padding:10px;margin:5px;border:none;border-radius:8px;}
+
+button{
+    padding:10px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+}
+
 .btn-add{background:#3498db;color:white;}
 .btn-delete{background:#e74c3c;color:white;}
 .btn-logout{background:#7f8c8d;color:white;}
+
 .search{text-align:center;padding:10px;}
-.search input{width:250px;padding:8px;}
-input,select{padding:6px;border:none;background:#f4f6f8;}
-.table-container{overflow-x:auto;padding:10px;}
-table{min-width:1200px;background:white;border-collapse:collapse;}
-th{background:#3498db;color:white;padding:8px;}
-td{padding:6px;border-bottom:1px solid #eee;}
-.active{background:#d6eaff;}
+
+.search input{
+    width:250px;
+    padding:8px;
+}
+
+/* 🔥 KLUCZOWE DLA NAZWISK */
+.nowrap{
+    white-space: nowrap;
+}
+
+/* tabela */
+.table-container{
+    overflow-x:auto;
+    padding:10px;
+}
+
+table{
+    min-width:1400px;
+    width:max-content;
+    border-collapse:collapse;
+    background:white;
+}
+
+th{
+    background:#3498db;
+    color:white;
+    padding:8px;
+}
+
+td{
+    padding:6px;
+    border-bottom:1px solid #eee;
+}
+
+input,select{
+    padding:5px;
+    border:none;
+    background:#f4f6f8;
+}
+
+.active{
+    background:#d6eaff;
+}
 </style>
 
 </head>
@@ -219,9 +254,7 @@ td{padding:6px;border-bottom:1px solid #eee;}
 </div>
 
 <div class="search">
-<input id="search" placeholder="🔍 Szukaj..." onkeyup="render()">
-<br><br>
-<select id="filterOsoba" onchange="render()"></select>
+<input id="search" placeholder="🔍 Szukaj..." oninput="render()">
 </div>
 
 <div class="table-container">
