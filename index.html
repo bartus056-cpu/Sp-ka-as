@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Rejestr badań – Spółka AS</title>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAQ3U0w1Ubp_sm_Vjx6jYCZ5UtGyRIsxug",
@@ -21,11 +22,20 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let dane = [];
-let zaznaczone = new Set();
+let zaznaczone = new Set(); // 🔥 ZMIANA
 let currentUser = "";
 
 // LOGIN
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
+
+// REGISTER
+window.register = async () => {
+    const userCred = await createUserWithEmailAndPassword(auth, email.value, haslo.value);
+    await setDoc(doc(db, "users", userCred.user.uid), {
+        name: imie.value,
+        email: email.value
+    });
+}
 
 // LOGOUT
 window.logout = () => signOut(auth);
@@ -38,15 +48,17 @@ const dozwoleni = [
 
 onAuthStateChanged(auth, async user => {
     if(user && dozwoleni.includes(user.email)){
+
         const snap = await getDoc(doc(db, "users", user.uid));
         currentUser = snap.exists() ? snap.data().name : user.email;
 
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
         load();
+
     } else {
-        loginDiv.style.display = "block";
-        appDiv.style.display = "none";
+        alert("Brak dostępu");
+        await signOut(auth);
     }
 });
 
@@ -84,12 +96,14 @@ window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// DELETE (multi)
+// DELETE (🔥 NOWE)
 window.usunZaznaczony = async () => {
     if(zaznaczone.size === 0){
         alert("Wybierz wiersze");
         return;
     }
+
+    if(!confirm("Usunąć zaznaczone wiersze?")) return;
 
     for(const id of zaznaczone){
         await deleteDoc(doc(db, "rejestr", id));
@@ -98,7 +112,7 @@ window.usunZaznaczony = async () => {
     zaznaczone.clear();
 }
 
-// SELECT (multi)
+// SELECT (🔥 NOWE)
 window.selectRow = (id) => {
     if(zaznaczone.has(id)){
         zaznaczone.delete(id);
@@ -125,7 +139,7 @@ function render(){
         body.innerHTML += `
         <tr class="${zaznaczone.has(row.id) ? 'active' : ''}">
             <td><input type="checkbox"
-                ${zaznaczone.has(row.id) ? "checked" : ""}
+                ${zaznaczone.has(row.id)?"checked":""}
                 onclick="event.stopPropagation(); selectRow('${row.id}')"></td>
 
             <td>${i+1}</td>
@@ -155,7 +169,7 @@ function render(){
     initSearch();
 }
 
-// 🔍 WYSZUKIWARKA (działa z inputami!)
+// 🔍 WYSZUKIWARKA (NIE RUSZANA)
 function initSearch(){
     const search = document.getElementById("search");
 
@@ -165,10 +179,16 @@ function initSearch(){
             const rows = document.querySelectorAll("#body tr");
 
             rows.forEach(row => {
+
                 let text = row.innerText.toLowerCase();
 
-                row.querySelectorAll("input").forEach(i => text += " " + i.value.toLowerCase());
-                row.querySelectorAll("select").forEach(s => text += " " + s.value.toLowerCase());
+                row.querySelectorAll("input").forEach(input => {
+                    text += " " + input.value.toLowerCase();
+                });
+
+                row.querySelectorAll("select").forEach(select => {
+                    text += " " + select.value.toLowerCase();
+                });
 
                 row.style.display = text.includes(fraza) ? "" : "none";
             });
@@ -178,73 +198,3 @@ function initSearch(){
     }
 }
 </script>
-
-<style>
-body{margin:0;font-family:Arial;background:#eef2f7;}
-.header{text-align:center;padding:20px;background:white;}
-.topbar{text-align:center;padding:10px;}
-button{padding:10px;margin:5px;border:none;border-radius:8px;}
-.btn-add{background:#3498db;color:white;}
-.btn-delete{background:#e74c3c;color:white;}
-.btn-logout{background:#7f8c8d;color:white;}
-.search{text-align:center;padding:10px;}
-.search input{width:250px;padding:8px;}
-.nowrap{white-space:nowrap;}
-.table-container{overflow-x:auto;padding:10px;}
-table{min-width:1400px;width:max-content;background:white;border-collapse:collapse;}
-th{background:#3498db;color:white;padding:8px;}
-td{padding:6px;border-bottom:1px solid #eee;}
-input,select{padding:5px;border:none;background:#f4f6f8;}
-.active{background:#d6eaff;}
-</style>
-
-</head>
-
-<body>
-
-<div id="loginDiv" style="text-align:center;padding:40px;">
-<h2>Logowanie</h2>
-<input id="email"><br><br>
-<input id="haslo" type="password"><br><br>
-<button onclick="login()">Zaloguj</button>
-</div>
-
-<div id="appDiv" style="display:none">
-
-<div class="header">
-<h2>Rejestr badań – Spółka AS</h2>
-</div>
-
-<div class="topbar">
-<button class="btn-add" onclick="dodaj()">Dodaj</button>
-<button class="btn-delete" onclick="usunZaznaczony()">Usuń</button>
-<button class="btn-logout" onclick="logout()">Wyloguj</button>
-</div>
-
-<div class="search">
-<input id="search" placeholder="🔍 Szukaj...">
-</div>
-
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>✔</th>
-<th>Nr</th>
-<th>Rejestrujący</th>
-<th>Firma</th>
-<th>Materiał</th>
-<th>Data Rejestracji</th>
-<th>Data Zakończenia</th>
-<th>VT</th><th>PT</th><th>MT</th><th>UT</th><th>RT</th>
-<th>R</th><th>G</th><th>MA</th><th>MI</th><th>HV</th><th>KV</th>
-</tr>
-</thead>
-<tbody id="body"></tbody>
-</table>
-</div>
-
-</div>
-
-</body>
-</html>
