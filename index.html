@@ -22,7 +22,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let dane = [];
-let zaznaczony = null;
+let zaznaczone = new Set();
 let currentUser = "";
 
 // LOGIN
@@ -97,14 +97,25 @@ window.update = async (id, key, value) => {
 
 // DELETE
 window.usunZaznaczony = async () => {
-    if(!zaznaczony) return alert("Wybierz wiersz");
-    await deleteDoc(doc(db, "rejestr", zaznaczony));
-    zaznaczony = null;
+    if(zaznaczone.size === 0){
+        alert("Wybierz wiersze");
+        return;
+    }
+
+    for(const id of zaznaczone){
+        await deleteDoc(doc(db, "rejestr", id));
+    }
+
+    zaznaczone.clear();
 }
 
 // SELECT
 window.selectRow = (id) => {
-    zaznaczony = zaznaczony === id ? null : id;
+    if(zaznaczone.has(id)){
+        zaznaczone.delete(id);
+    } else {
+        zaznaczone.add(id);
+    }
     render();
 }
 
@@ -125,7 +136,7 @@ function render(){
         body.innerHTML += `
         <tr class="${zaznaczony===row.id ? 'active' : ''}">
             <td><input type="checkbox"
-                ${zaznaczony===row.id?"checked":""}
+               class="${zaznaczone.has(row.id) ? 'active' : ''}"
                 onclick="event.stopPropagation(); selectRow('${row.id}')"></td>
 
             <td>${i+1}</td>
