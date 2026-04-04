@@ -23,34 +23,30 @@ const db = getFirestore(app);
 let dane = [];
 let zaznaczony = null;
 let currentUser = "";
+let sortKey = null;
+let sortAsc = true;
 
-// 🔐 LOGIN
+// LOGIN
 window.login = () => signInWithEmailAndPassword(auth, email.value, haslo.value);
 
-// 🆕 REJESTRACJA (z imieniem)
+// REGISTER
 window.register = async () => {
     const userCred = await createUserWithEmailAndPassword(auth, email.value, haslo.value);
-
     await setDoc(doc(db, "users", userCred.user.uid), {
         name: imie.value,
         email: email.value
     });
 }
 
-// 🚪 WYLOGUJ
+// LOGOUT
 window.logout = () => signOut(auth);
 
-// 👤 USER + imię
+// USER
 onAuthStateChanged(auth, async user => {
     if(user){
         const ref = doc(db, "users", user.uid);
         const snap = await getDoc(ref);
-
-        if(snap.exists()){
-            currentUser = snap.data().name;
-        } else {
-            currentUser = user.email;
-        }
+        currentUser = snap.exists() ? snap.data().name : user.email;
 
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
@@ -61,12 +57,12 @@ onAuthStateChanged(auth, async user => {
     }
 });
 
-// 📅 dzisiejsza data
+// TODAY
 function today(){
     return new Date().toISOString().split("T")[0];
 }
 
-// 🔄 sync
+// LOAD
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -77,7 +73,7 @@ function load(){
     });
 }
 
-// ➕ dodaj
+// ADD
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
         rejestrujacy: currentUser,
@@ -90,32 +86,32 @@ window.dodaj = async () => {
     });
 }
 
-// ✏️ update
+// UPDATE
 window.update = async (id, key, value) => {
     await updateDoc(doc(db, "rejestr", id), {[key]: value});
 }
 
-// ❌ delete
+// DELETE
 window.usunZaznaczony = async () => {
     if(!zaznaczony) return alert("Wybierz wiersz");
     await deleteDoc(doc(db, "rejestr", zaznaczony));
     zaznaczony = null;
 }
 
-// 🎯 select
+// SELECT
 window.selectRow = (id) => {
     zaznaczony = zaznaczony === id ? null : id;
     render();
 }
 
-// 🔍 wyszukiwarka
-function filtruj(dane, fraza){
-    return dane.filter(row => 
-        Object.values(row).join(" ").toLowerCase().includes(fraza)
-    );
+// SORT
+window.sortuj = (key) => {
+    sortAsc = sortKey === key ? !sortAsc : true;
+    sortKey = key;
+    render();
 }
 
-// 🔢 dropdown
+// OPTIONS
 function opcje(val){
     let html = `<option value=""></option>`;
     for(let i=1;i<=99;i++){
@@ -124,22 +120,37 @@ function opcje(val){
     return html;
 }
 
-// 🎨 render
+// RENDER
 function render(){
-    const fraza = search.value.toLowerCase();
-    const lista = filtruj(dane, fraza);
+    const searchVal = document.getElementById("search")?.value.toLowerCase() || "";
+    const osobaFilter = document.getElementById("filterOsoba")?.value || "";
+
+    let lista = dane.filter(row =>
+        Object.values(row).join(" ").toLowerCase().includes(searchVal)
+    );
+
+    if(osobaFilter){
+        lista = lista.filter(r => r.rejestrujacy === osobaFilter);
+    }
+
+    if(sortKey){
+        lista.sort((a,b)=>{
+            return sortAsc
+                ? (a[sortKey]||"").localeCompare(b[sortKey]||"")
+                : (b[sortKey]||"").localeCompare(a[sortKey]||"");
+        });
+    }
 
     body.innerHTML = "";
 
-    lista.forEach((row, i) => {
+    lista.forEach((row,i)=>{
         body.innerHTML += `
-        <tr class="${zaznaczony===row.id ? 'active' : ''}">
-            <td><input type="checkbox"
-                ${zaznaczony===row.id?"checked":""}
-                onclick="event.stopPropagation(); selectRow('${row.id}')"></td>
+        <tr class="${zaznaczony===row.id?'active':''}">
+            <td><input type="checkbox" ${zaznaczony===row.id?'checked':''}
+            onclick="event.stopPropagation(); selectRow('${row.id}')"></td>
 
             <td>${i+1}</td>
-            <td>${row.rejestrujacy || ""}</td>
+            <td>${row.rejestrujacy||""}</td>
 
             <td><input value="${row.firma||""}" onchange="update('${row.id}','firma',this.value)"></td>
             <td><input value="${row.material||""}" onchange="update('${row.id}','material',this.value)"></td>
@@ -173,14 +184,13 @@ button{padding:10px;margin:5px;border:none;border-radius:8px;}
 .btn-add{background:#3498db;color:white;}
 .btn-delete{background:#e74c3c;color:white;}
 .btn-logout{background:#7f8c8d;color:white;}
-input,select{width:100%;padding:5px;border:none;background:#f4f6f8;}
+.search{padding:10px;text-align:center;}
+input,select{padding:6px;border:none;background:#f4f6f8;}
 .table-container{overflow-x:auto;padding:10px;}
 table{min-width:1200px;background:white;border-collapse:collapse;}
-th{background:#3498db;color:white;padding:8px;}
+th{background:#3498db;color:white;padding:8px;cursor:pointer;}
 td{padding:6px;border-bottom:1px solid #eee;}
 .active{background:#d6eaff;}
-.search{text-align:center;padding:10px;}
-.search input{width:250px;padding:8px;}
 </style>
 
 </head>
@@ -188,12 +198,10 @@ td{padding:6px;border-bottom:1px solid #eee;}
 <body>
 
 <div id="loginDiv" style="text-align:center;padding:40px;">
-<h2>Logowanie / Rejestracja</h2>
-
+<h2>Logowanie</h2>
 <input id="imie" placeholder="Imię i nazwisko"><br><br>
-<input id="email" placeholder="Email"><br><br>
-<input id="haslo" type="password" placeholder="Hasło"><br><br>
-
+<input id="email"><br><br>
+<input id="haslo" type="password"><br><br>
 <button onclick="login()">Zaloguj</button>
 <button onclick="register()">Zarejestruj</button>
 </div>
@@ -213,6 +221,10 @@ td{padding:6px;border-bottom:1px solid #eee;}
 
 <div class="search">
 <input id="search" placeholder="🔍 Szukaj..." onkeyup="render()">
+<br><br>
+<select id="filterOsoba" onchange="render()">
+<option value="">-- filtruj po osobie --</option>
+</select>
 </div>
 
 <div class="table-container">
@@ -220,10 +232,9 @@ td{padding:6px;border-bottom:1px solid #eee;}
 <thead>
 <tr>
 <th>✔</th>
-<th>Nr</th>
-<th>Rejestrujący</th>
-<th>Firma</th>
-<th>Materiał</th>
+<th onclick="sortuj('rejestrujacy')">Rejestrujący</th>
+<th onclick="sortuj('firma')">Firma</th>
+<th onclick="sortuj('material')">Materiał</th>
 <th>Data Rejestracji</th>
 <th>Data Zakończenia</th>
 <th>VT</th><th>PT</th><th>MT</th><th>UT</th><th>RT</th>
