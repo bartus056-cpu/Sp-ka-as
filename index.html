@@ -40,29 +40,26 @@ window.register = async () => {
 // LOGOUT
 window.logout = () => signOut(auth);
 
-// ✅ USUNIĘTA BLOKADA MAILI
+// AUTH (bez blokady maili)
 onAuthStateChanged(auth, async user => {
     if(user){
-
         const snap = await getDoc(doc(db, "users", user.uid));
         currentUser = snap.exists() ? snap.data().name : user.email;
 
         loginDiv.style.display = "none";
         appDiv.style.display = "block";
         load();
-
     } else {
         loginDiv.style.display = "block";
         appDiv.style.display = "none";
     }
 });
 
-// DATA
 function today(){
     return new Date().toISOString().split("T")[0];
 }
 
-// LOAD
+// LOAD (🔥 nowe na dole)
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -70,7 +67,8 @@ function load(){
             dane.push({id: docSnap.id, ...docSnap.data()});
         });
 
-        dane.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        // NOWE NA DOLE
+        dane.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
         render();
     });
@@ -118,34 +116,18 @@ window.usunZaznaczony = async () => {
 
 // FAKTURA
 window.oznaczFaktura = async () => {
-    if(zaznaczone.size === 0){
-        alert("Wybierz wiersze");
-        return;
-    }
-
     for(const id of zaznaczone){
-        await updateDoc(doc(db, "rejestr", id), {
-            status: "done"
-        });
+        await updateDoc(doc(db, "rejestr", id), {status: "done"});
     }
-
     zaznaczone.clear();
     render();
 }
 
 // COFNIJ
 window.cofnijFakture = async () => {
-    if(zaznaczone.size === 0){
-        alert("Wybierz wiersze");
-        return;
-    }
-
     for(const id of zaznaczone){
-        await updateDoc(doc(db, "rejestr", id), {
-            status: ""
-        });
+        await updateDoc(doc(db, "rejestr", id), {status: ""});
     }
-
     zaznaczone.clear();
     render();
 }
@@ -160,7 +142,6 @@ window.selectRow = (id) => {
     render();
 }
 
-// OPTIONS
 function opcje(val){
     let html = `<option value=""></option>`;
     for(let i=1;i<=99;i++){
@@ -177,11 +158,9 @@ function render(){
         body.innerHTML += `
         <tr class="${zaznaczone.has(row.id) ? 'active' : ''} ${row.status === 'done' ? 'done' : ''}">
         
-            <td>
-                <input type="checkbox"
+            <td><input type="checkbox"
                 ${zaznaczone.has(row.id)?"checked":""}
-                onclick="selectRow('${row.id}')">
-            </td>
+                onclick="selectRow('${row.id}')"></td>
 
             <td>${i+1}</td>
             <td class="nowrap">${row.rejestrujacy || ""}</td>
@@ -193,9 +172,7 @@ function render(){
             <td><input value="${row.nr_probki||""}" onchange="update('${row.id}','nr_probki',this.value)"></td>
             <td><input value="${row.rodzaj||""}" onchange="update('${row.id}','rodzaj',this.value)"></td>
 
-            <td>
-            <textarea onchange="update('${row.id}','info',this.value)" style="min-width:200px;height:60px;">${row.info||""}</textarea>
-            </td>
+            <td><textarea onchange="update('${row.id}','info',this.value)">${row.info||""}</textarea></td>
 
             <td><input type="date" value="${row.start||today()}" onchange="update('${row.id}','start',this.value)"></td>
             <td><input type="date" value="${row.koniec||""}" onchange="update('${row.id}','koniec',this.value)"></td>
@@ -250,6 +227,7 @@ function initSearch(){
 <style>
 body{margin:0;font-family:Arial;background:#eef2f7;}
 .header{text-align:center;padding:20px;background:white;}
+.header img{height:60px;} /* 🔥 LOGO */
 .topbar{text-align:center;padding:10px;}
 button{padding:10px;margin:5px;border:none;border-radius:8px;}
 .btn-add{background:#3498db;color:white;}
@@ -283,6 +261,7 @@ input,select,textarea{padding:5px;border:none;background:#f4f6f8;}
 <div id="appDiv" style="display:none">
 
 <div class="header">
+<img src="logo.png"> <!-- 🔥 LOGO WRÓCIŁO -->
 <h2>Rejestr badań – Spółka AS</h2>
 </div>
 
