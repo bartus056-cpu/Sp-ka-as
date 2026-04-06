@@ -40,7 +40,7 @@ window.register = async () => {
 // LOGOUT
 window.logout = () => signOut(auth);
 
-// AUTH (bez blokady maili)
+// AUTH
 onAuthStateChanged(auth, async user => {
     if(user){
         const snap = await getDoc(doc(db, "users", user.uid));
@@ -59,7 +59,7 @@ function today(){
     return new Date().toISOString().split("T")[0];
 }
 
-// LOAD (🔥 nowe na dole)
+// LOAD (nowe na dole)
 function load(){
     onSnapshot(collection(db, "rejestr"), snapshot => {
         dane = [];
@@ -67,16 +67,16 @@ function load(){
             dane.push({id: docSnap.id, ...docSnap.data()});
         });
 
-        // NOWE NA DOLE
         dane.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
         render();
     });
 }
 
-// ADD
+// ADD (🔥 stały numer)
 window.dodaj = async () => {
     await addDoc(collection(db, "rejestr"), {
+        nr: Date.now(), // 🔥 stały numer
         rejestrujacy: currentUser,
         firma:"",
         material:"",
@@ -101,32 +101,8 @@ window.update = async (id, key, value) => {
 
 // DELETE
 window.usunZaznaczony = async () => {
-    if(zaznaczone.size === 0){
-        alert("Wybierz wiersze");
-        return;
-    }
-
     for(const id of zaznaczone){
         await deleteDoc(doc(db, "rejestr", id));
-    }
-
-    zaznaczone.clear();
-    render();
-}
-
-// FAKTURA
-window.oznaczFaktura = async () => {
-    for(const id of zaznaczone){
-        await updateDoc(doc(db, "rejestr", id), {status: "done"});
-    }
-    zaznaczone.clear();
-    render();
-}
-
-// COFNIJ
-window.cofnijFakture = async () => {
-    for(const id of zaznaczone){
-        await updateDoc(doc(db, "rejestr", id), {status: ""});
     }
     zaznaczone.clear();
     render();
@@ -162,17 +138,18 @@ function render(){
                 ${zaznaczone.has(row.id)?"checked":""}
                 onclick="selectRow('${row.id}')"></td>
 
-            <td>${i+1}</td>
+            <td>${row.nr || i+1}</td>
+
             <td class="nowrap">${row.rejestrujacy || ""}</td>
 
-            <td><input value="${row.firma||""}" onchange="update('${row.id}','firma',this.value)"></td>
-            <td><input value="${row.material||""}" onchange="update('${row.id}','material',this.value)"></td>
+            <td><input value="${row.firma||""}" oninput="update('${row.id}','firma',this.value)"></td>
+            <td><input value="${row.material||""}" oninput="update('${row.id}','material',this.value)"></td>
 
-            <td><input value="${row.zamowienie||""}" onchange="update('${row.id}','zamowienie',this.value)"></td>
-            <td><input value="${row.nr_probki||""}" onchange="update('${row.id}','nr_probki',this.value)"></td>
-            <td><input value="${row.rodzaj||""}" onchange="update('${row.id}','rodzaj',this.value)"></td>
+            <td><input value="${row.zamowienie||""}" oninput="update('${row.id}','zamowienie',this.value)"></td>
+            <td><input value="${row.nr_probki||""}" oninput="update('${row.id}','nr_probki',this.value)"></td>
+            <td><input value="${row.rodzaj||""}" oninput="update('${row.id}','rodzaj',this.value)"></td>
 
-            <td><textarea onchange="update('${row.id}','info',this.value)">${row.info||""}</textarea></td>
+            <td><textarea oninput="update('${row.id}','info',this.value)">${row.info||""}</textarea></td>
 
             <td><input type="date" value="${row.start||today()}" onchange="update('${row.id}','start',this.value)"></td>
             <td><input type="date" value="${row.koniec||""}" onchange="update('${row.id}','koniec',this.value)"></td>
@@ -226,21 +203,78 @@ function initSearch(){
 
 <style>
 body{margin:0;font-family:Arial;background:#eef2f7;}
+
 .header{text-align:center;padding:20px;background:white;}
-.header img{height:60px;} /* 🔥 LOGO */
+.header img{height:60px;}
+
 .topbar{text-align:center;padding:10px;}
-button{padding:10px;margin:5px;border:none;border-radius:8px;}
+
+button{
+    padding:10px 14px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{opacity:0.8;}
+
 .btn-add{background:#3498db;color:white;}
 .btn-delete{background:#e74c3c;color:white;}
 .btn-logout{background:#7f8c8d;color:white;}
+
 .search{text-align:center;padding:10px;}
-.search input{width:250px;padding:8px;}
+.search input{
+    width:260px;
+    padding:10px;
+    border-radius:8px;
+    border:none;
+}
+
 .nowrap{white-space:nowrap;}
+
 .table-container{overflow-x:auto;padding:10px;}
-table{min-width:1700px;width:max-content;background:white;border-collapse:collapse;}
-th{background:#3498db;color:white;padding:8px;}
-td{padding:6px;border-bottom:1px solid #eee;}
-input,select,textarea{padding:5px;border:none;background:#f4f6f8;}
+
+table{
+    min-width:1700px;
+    width:max-content;
+    background:white;
+    border-collapse:collapse;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+th{
+    background:#3498db;
+    color:white;
+    padding:10px;
+    position:sticky;
+    top:0;
+    z-index:2;
+}
+
+td{
+    padding:6px;
+    border-bottom:1px solid #eee;
+}
+
+tr:hover{
+    background:#eef6ff;
+}
+
+input,select,textarea{
+    padding:6px;
+    border:none;
+    background:#f4f6f8;
+    border-radius:6px;
+}
+
+textarea{
+    min-width:200px;
+    height:60px;
+}
+
 .active{background:#d6eaff;}
 .done{background:#ffcccc !important;}
 </style>
@@ -261,21 +295,13 @@ input,select,textarea{padding:5px;border:none;background:#f4f6f8;}
 <div id="appDiv" style="display:none">
 
 <div class="header">
-<img src="logo.png"> <!-- 🔥 LOGO WRÓCIŁO -->
+<img src="logo.png">
 <h2>Rejestr badań – Spółka AS</h2>
-</div>
-
-<div style="text-align:center;padding:5px;">
-<span style="background:red;color:white;padding:5px 10px;border-radius:5px;">
-Czerwony = Faktura wystawiona
-</span>
 </div>
 
 <div class="topbar">
 <button class="btn-add" onclick="dodaj()">Dodaj</button>
 <button class="btn-delete" onclick="usunZaznaczony()">Usuń</button>
-<button style="background:red;color:white" onclick="oznaczFaktura()">Faktura</button>
-<button style="background:#555;color:white" onclick="cofnijFakture()">Cofnij</button>
 <button class="btn-logout" onclick="logout()">Wyloguj</button>
 </div>
 
